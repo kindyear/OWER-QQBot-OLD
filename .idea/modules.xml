@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/ower-mirai.iml" filepath="$PROJECT_DIR$/.idea/ower-mirai.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/ower-qqbot.iml" filepath="$PROJECT_DIR$/.idea/ower-qqbot.iml" />
     </modules>
   </component>
 </project>
