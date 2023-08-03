@@ -1,3 +1,10 @@
+/*
+
+    dataBase.js
+    数据库处理代码
+
+*/
+
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 

@@ -1,3 +1,9 @@
+/*
+
+    app.js
+    主程序入口
+
+ */
 const WebSocket = require('websocket');
 const axios = require('axios');
 const config = require('./config/config');
