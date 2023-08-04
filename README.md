@@ -38,6 +38,15 @@ git clone https://github.com/kindyear/OWER-QQBot.git
 node app.js
 ```
 
+# TODO
+-[x] 玩家基础信息查询
+
+-[ ] 玩家竞技/休闲英雄信息查询
+
+-[ ] 玩家竞技/休闲数据查询
+
+-[ ] 中文翻译功能
+
 # 启发 / 感谢
 
 > 排名不分前后
