@@ -133,11 +133,11 @@ function sendGroupMessage(groupID, message) {
 
     axios.get(url)
         .then((response) => {
-            console.log(`${getCurrentTime()} 消息发送成功: ${message}`);
+            console.log(`${getCurrentTime()} 消息发送成功: \n\u001b[33m${message}\u001b[0m`);
             // console.log(response.data);
         })
         .catch((error) => {
-            console.error(`${getCurrentTime()} 消息发送失败: ${message}`);
+            console.error(`${getCurrentTime()} 消息发送成功: \n\u001b[33m${message}\u001b[0m`);
             // console.error(error.message);
         });
 }

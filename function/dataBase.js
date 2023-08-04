@@ -26,15 +26,15 @@ function initializeDatabase() {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(DB_FILE_PATH, (err) => {
             if (err) {
-                console.error('连接数据库时出错：', err.message);
+                console.error('[初始化] 连接数据库时出错：', err.message);
                 reject(err);
             } else {
-                console.log('已连接到数据库。');
+                // console.log('已连接到数据库。');
 
                 // 检查 groups 表是否存在
                 db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='groups'", [], (err, row) => {
                     if (err) {
-                        console.error('检查表是否存在时出错：', err.message);
+                        console.error('[初始化] 检查表是否存在时出错：', err.message);
                         reject(err);
                     } else {
                         if (!row) {
@@ -49,10 +49,10 @@ function initializeDatabase() {
 
                             db.run(createGroupsTableSQL, (err) => {
                                 if (err) {
-                                    console.error('创建 groups 表时出错：', err.message);
+                                    console.error('[初始化] 创建 groups 表时出错：', err.message);
                                     reject(err);
                                 } else {
-                                    console.log('成功创建 groups 表。');
+                                    console.log('[初始化] 成功创建 groups 表。');
                                     resolve();
                                 }
                             });
@@ -65,7 +65,7 @@ function initializeDatabase() {
                 // 检查 translation 表是否存在
                 db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='translation'", [], (err, row) => {
                     if (err) {
-                        console.error('检查表是否存在时出错：', err.message);
+                        console.error('[初始化] 检查表是否存在时出错：', err.message);
                         reject(err);
                     } else {
                         if (!row) {
@@ -80,10 +80,10 @@ function initializeDatabase() {
 
                             db.run(createTranslationTableSQL, (err) => {
                                 if (err) {
-                                    console.error('创建 translation 表时出错：', err.message);
+                                    console.error('[初始化] 创建 translation 表时出错：', err.message);
                                     reject(err);
                                 } else {
-                                    console.log('成功创建 translation 表。');
+                                    console.log('[初始化] 成功创建 translation 表。');
                                     resolve();
                                 }
                             });
@@ -98,9 +98,9 @@ function initializeDatabase() {
         // 在所有数据库操作完成后关闭数据库连接
         db.close((err) => {
             if (err) {
-                console.error('关闭数据库连接时出错：', err.message);
+                console.error('[初始化] 关闭数据库连接时出错：', err.message);
             } else {
-                console.log('数据库连接已关闭。');
+                console.log('[初始化] 数据库连接已关闭。');
             }
         });
     });
@@ -111,18 +111,18 @@ function insertGroupInfo(groupID, isBotEnabled) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(DB_FILE_PATH, (err) => {
             if (err) {
-                console.error('连接数据库时出错：', err.message);
+                console.error('[插入群信息] 连接数据库时出错：', err.message);
                 reject(err);
             } else {
-                console.log('已连接到数据库。');
+                console.log('[插入群信息] 已连接到数据库。');
 
                 const insertGroupsSQL = `INSERT INTO groups (group_id, is_bot_enabled) VALUES (?, ?)`;
                 db.run(insertGroupsSQL, [groupID, isBotEnabled], (err) => {
                     if (err) {
-                        console.error('插入群信息时出错：', err.message);
+                        console.error('[插入群信息] 插入群信息时出错：', err.message);
                         reject(err);
                     } else {
-                        console.log('成功插入群信息。');
+                        console.log('[插入群信息] 成功插入群信息。');
                         resolve();
                     }
                 });
@@ -130,9 +130,9 @@ function insertGroupInfo(groupID, isBotEnabled) {
                 // 插入完成后关闭数据库连接
                 db.close((err) => {
                     if (err) {
-                        console.error('关闭数据库连接时出错：', err.message);
+                        console.error('[插入群信息] 关闭数据库连接时出错：', err.message);
                     } else {
-                        console.log('数据库连接已关闭。');
+                        console.log('[插入群信息] 数据库连接已关闭。');
                     }
                 });
             }
@@ -145,28 +145,28 @@ function isBotEnabledForGroup(groupID) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(DB_FILE_PATH, (err) => {
             if (err) {
-                console.error(`${getCurrentTime()} 连接数据库时出错：`, err.message);
+                console.error(`${getCurrentTime()} [检查群启用] 连接数据库时出错：`, err.message);
                 reject(err);
             } else {
-                console.log(`${getCurrentTime()} 已连接到数据库。`);
+                // console.log(`${getCurrentTime()} 已连接到数据库。`);
 
                 const queryGroups = `SELECT is_bot_enabled FROM groups WHERE group_id = ?`;
                 db.get(queryGroups, [groupID], (err, row) => {
                     if (err) {
-                        console.error(`${getCurrentTime()} 查询群信息时出错：`, err.message);
+                        console.error(`${getCurrentTime()} [检查群启用] 查询群信息时出错：`, err.message);
                         reject(err);
                     } else {
                         const isEnabled = row ? !!row.is_bot_enabled : false;
-                        console.log(`${getCurrentTime()} 群 ${groupID} 是否启用机器人功能：${isEnabled}`);
+                        console.log(`${getCurrentTime()} [检查群启用] 群 ${groupID} 启用状态：${isEnabled}`);
                         resolve(isEnabled);
                     }
 
                     // 查询完成后关闭数据库连接
                     db.close((err) => {
                         if (err) {
-                            console.error(`${getCurrentTime()} 关闭数据库连接时出错：`, err.message);
+                            console.error(`${getCurrentTime()} [检查群启用] 关闭数据库连接时出错：`, err.message);
                         } else {
-                            console.log(`${getCurrentTime()} 数据库连接已关闭。`);
+                            // console.log(`${getCurrentTime()} [检查群启用] 数据库连接已关闭。`);
                         }
                     });
                 });
@@ -180,28 +180,28 @@ function getChineseTranslation(sourceText) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(DB_FILE_PATH, (err) => {
             if (err) {
-                console.error(`${getCurrentTime()} 连接数据库时出错：`, err.message);
+                console.error(`${getCurrentTime()} [获取翻译] 连接数据库时出错：`, err.message);
                 reject(err);
             } else {
-                console.log(`${getCurrentTime()} 已连接到数据库。`);
+                // console.log(`${getCurrentTime()} [获取翻译] 已连接到数据库。`);
 
                 const queryTranslation = `SELECT target FROM translation WHERE source = ?`;
                 db.get(queryTranslation, [sourceText], (err, row) => {
                     if (err) {
-                        console.error(`${getCurrentTime()} 查询翻译时出错：`, err.message);
+                        console.error(`${getCurrentTime()} [获取翻译] 查询翻译时出错：`, err.message);
                         reject(err);
                     } else {
                         const targetText = row ? row.target : null;
-                        console.log(`${getCurrentTime()} 翻译结果：${targetText}`);
+                        // console.log(`${getCurrentTime()} [获取翻译] 翻译结果：${targetText}`);
                         resolve(targetText);
                     }
 
                     // 查询完成后关闭数据库连接
                     db.close((err) => {
                         if (err) {
-                            console.error(`${getCurrentTime()} 关闭数据库连接时出错：`, err.message);
+                            console.error(`${getCurrentTime()} [获取翻译] 关闭数据库连接时出错：`, err.message);
                         } else {
-                            console.log(`${getCurrentTime()} 数据库连接已关闭。`);
+                            // console.log(`${getCurrentTime()} [获取翻译] 数据库连接已关闭。`);
                         }
                     });
                 });
