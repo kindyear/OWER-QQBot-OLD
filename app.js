@@ -4,30 +4,34 @@
     主程序入口
 
  */
+
+console.log('Starting OWER-QQBot...');
 const WebSocket = require('websocket');
 const axios = require('axios');
 const config = require('./config/config');
 const wsUrl = config.WEBSOCKET_HOST;
 const getPlayerInfo = require('./function/getPlayerInfo');
 const {getCurrentTime} = require('./utils');
+const packageInfo = require('./package.json');
 
 
 // 创建 WebSocket 连接
 const ws = new WebSocket.client();
 
 ws.on('connectFailed', (error) => {
-    console.log(`${getCurrentTime()} 连接失败:`, error);
+    console.log(`${getCurrentTime()} WebSocket Connection failure:`, error);
 });
 
 ws.on('connect', (connection) => {
-    console.log(`${getCurrentTime()} 已连接到go-cqhttp WebSocket`);
+    console.log(`${getCurrentTime()} OWER-QQBot v${packageInfo.version} started.`);
+    console.log(`${getCurrentTime()} Connected to the go-cqhttp WebSocket: ${wsUrl}`);
 
     connection.on('error', (error) => {
-        console.log(`${getCurrentTime()} 连接错误:`, error);
+        console.log(`${getCurrentTime()} Websocket connection failure:`, error);
     });
 
     connection.on('close', () => {
-        console.log(`${getCurrentTime()} 连接已关闭`);
+        console.log(`${getCurrentTime()} Websocket connection closed:`);
     });
 
     getPlayerInfo.setConnection(connection); // 将连接传递给 getPlayerInfo.js 文件

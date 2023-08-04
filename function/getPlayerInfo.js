@@ -1,12 +1,11 @@
-const WebSocket = require('websocket');
 const axios = require('axios');
 const config = require('../config/config');
 const httpHost = config.HTTP_HOST;
 const owerApi = config.OWER_API;
 const owerApiKey = config.OWER_API_KEY;
 const { getCurrentTime } = require('../utils');
-const sqlite3 = require('sqlite3').verbose();
-const { isBotEnabledForGroup } = require('./dataBase'); // 引入数据库操作函数
+require('sqlite3').verbose();
+const { isBotEnabledForGroup , getChineseTranslation} = require('./dataBase'); // 引入数据库操作函数
 
 let connection = null;
 
@@ -39,18 +38,31 @@ function handleMessage(message) {
                         const url = `${owerApi}/v1/api/playerinfo?apiKey=${owerApiKey}&playerTag=${playerTag}`;
                         axios.get(url)
                             .then((response) => {
+                                // console.log('API返回结果：', response.data); // 添加调试信息
                                 const playerInfo = response.data;
                                 if (playerInfo.error === 'Failed to scrape data.') {
-                                    const errorMessage = '获取玩家信息失败，请检查BattleTag是否正确或稍后重试';
+                                    const errorMessage = '查询出错，请稍后重试或咨询机器人管理员。';
+                                    sendGroupMessage(data.group_id, errorMessage);
+                                } else if (playerInfo.error === 'Player not found.') {
+                                    const errorMessage = `无法找到${playerTag}的信息，请检查BattleTag是否正确。`;
                                     sendGroupMessage(data.group_id, errorMessage);
                                 } else {
-                                    const replyMessage = constructReplyMessage(playerInfo); // 调用 constructReplyMessage 函数
-                                    sendGroupMessage(data.group_id, replyMessage);
+                                    // 对玩家信息进行翻译处理
+                                    translatePlayerInfo(playerInfo)
+                                        .then((translatedInfo) => {
+                                            const replyMessage = constructReplyMessage(translatedInfo); // 调用 constructReplyMessage 函数
+                                            sendGroupMessage(data.group_id, replyMessage);
+                                        })
+                                        .catch((error) => {
+                                            console.error(`${getCurrentTime()} 翻译玩家信息时出错：`, error.message);
+                                            const errorMessage = '获取玩家信息失败，请检查BattleTag是否正确或稍后重试';
+                                            sendGroupMessage(data.group_id, errorMessage);
+                                        });
                                 }
                             })
                             .catch((error) => {
                                 console.error(`${getCurrentTime()} 获取玩家信息失败：`, error.message);
-                                const errorMessage = '获取玩家信息失败，请检查BattleTag是否正确或稍后重试';
+                                const errorMessage = '查询出错，请稍后重试或咨询机器人管理员。';
                                 sendGroupMessage(data.group_id, errorMessage);
                             });
                     } else {
@@ -65,10 +77,44 @@ function handleMessage(message) {
     }
 }
 
+async function translatePlayerInfo(playerInfo) {
+    const translatedInfo = { ...playerInfo }; // 复制一份玩家信息
+
+    // 处理竞技信息
+    const pc = translatedInfo.playerCompetitiveInfo.PC;
+    if (pc) {
+        if (pc.Tank && pc.Tank.playerCompetitivePCTank) {
+            pc.Tank.playerCompetitivePCTank = await getChineseTranslation(pc.Tank.playerCompetitivePCTank);
+        }
+        if (pc.Damage && pc.Damage.playerCompetitivePCDamage) {
+            pc.Damage.playerCompetitivePCDamage = await getChineseTranslation(pc.Damage.playerCompetitivePCDamage);
+        }
+        if (pc.Support && pc.Support.playerCompetitivePCSupport) {
+            pc.Support.playerCompetitivePCSupport = await getChineseTranslation(pc.Support.playerCompetitivePCSupport);
+        }
+    }
+
+    return translatedInfo;
+}
+
+
 function constructReplyMessage(playerInfo) {
     if (playerInfo && playerInfo.playerBaseInfo) {
         const { playerTag, playerTitle, endorsementLevel } = playerInfo.playerBaseInfo;
         const { PC } = playerInfo.playerCompetitiveInfo;
+
+        // 检查玩家信息是否存在
+        const isPlayerNotExist = playerInfo.error === "Player not found.";
+        // console.log(isPlayerNotExist);
+        if (isPlayerNotExist) {
+            return `无法找到${playerTag}的信息，请检查BattleTag是否正确。`;
+        } else {
+            // 检查玩家生涯私密状态
+            const isPrivate = playerInfo.private === true;
+            if (isPrivate) {
+                return `BattleTag：${playerTag}\n玩家头衔：${playerTitle}\n赞赏等级：${endorsementLevel}\n\n竞技信息：\n生涯不公开，无法查询`;
+            }
+        }
 
         // 处理竞技信息
         const tank = PC?.Tank ? `${PC.Tank.playerCompetitivePCTank} - ${PC.Tank.playerCompetitivePCTankTier}` : "无段位信息";
@@ -76,12 +122,10 @@ function constructReplyMessage(playerInfo) {
         const support = PC?.Support ? `${PC.Support.playerCompetitivePCSupport} - ${PC.Support.playerCompetitivePCSupportTier}` : "无段位信息";
 
         // 构建回复消息
-        const replyMessage = `BattleTag：${playerTag}\n玩家头衔：${playerTitle}\n赞赏等级：${endorsementLevel}\n\n竞技信息：\n坦克：${tank}\n输出：${damage}\n辅助：${support}`;
-
-        return replyMessage;
+        return `BattleTag：${playerTag}\n玩家头衔：${playerTitle}\n赞赏等级：${endorsementLevel}\n\n竞技信息：\n坦克：${tank}\n输出：${damage}\n辅助：${support}`;
     }
 
-    return "获取玩家信息失败或无相关信息";
+    return "查询出错，请稍后重试或咨询机器人管理员。";
 }
 
 function sendGroupMessage(groupID, message) {
@@ -90,11 +134,11 @@ function sendGroupMessage(groupID, message) {
     axios.get(url)
         .then((response) => {
             console.log(`${getCurrentTime()} 消息发送成功: ${message}`);
-            console.log(response.data); // 如果需要获取响应数据，可以在这里进行处理
+            // console.log(response.data);
         })
         .catch((error) => {
             console.error(`${getCurrentTime()} 消息发送失败: ${message}`);
-            console.error(error.message);
+            // console.error(error.message);
         });
 }
 

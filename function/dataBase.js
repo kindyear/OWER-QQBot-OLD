@@ -1,10 +1,11 @@
 /*
 
-    dataBase.js
+    database.js
     数据库处理代码
 
 */
 
+const { getCurrentTime } = require('../utils');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 
@@ -38,7 +39,7 @@ function initializeDatabase() {
                     } else {
                         if (!row) {
                             // groups 表不存在，创建它
-                            const createTableSQL = `
+                            const createGroupsTableSQL = `
                                 CREATE TABLE groups (
                                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                                     group_id INTEGER NOT NULL UNIQUE,
@@ -46,12 +47,43 @@ function initializeDatabase() {
                                 )
                             `;
 
-                            db.run(createTableSQL, (err) => {
+                            db.run(createGroupsTableSQL, (err) => {
                                 if (err) {
                                     console.error('创建 groups 表时出错：', err.message);
                                     reject(err);
                                 } else {
                                     console.log('成功创建 groups 表。');
+                                    resolve();
+                                }
+                            });
+                        } else {
+                            resolve();
+                        }
+                    }
+                });
+
+                // 检查 translation 表是否存在
+                db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='translation'", [], (err, row) => {
+                    if (err) {
+                        console.error('检查表是否存在时出错：', err.message);
+                        reject(err);
+                    } else {
+                        if (!row) {
+                            // translation 表不存在，创建它
+                            const createTranslationTableSQL = `
+                                CREATE TABLE translation (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    source TEXT NOT NULL UNIQUE,
+                                    target TEXT NOT NULL
+                                )
+                            `;
+
+                            db.run(createTranslationTableSQL, (err) => {
+                                if (err) {
+                                    console.error('创建 translation 表时出错：', err.message);
+                                    reject(err);
+                                } else {
+                                    console.log('成功创建 translation 表。');
                                     resolve();
                                 }
                             });
@@ -84,8 +116,8 @@ function insertGroupInfo(groupID, isBotEnabled) {
             } else {
                 console.log('已连接到数据库。');
 
-                const insertSQL = `INSERT INTO groups (group_id, is_bot_enabled) VALUES (?, ?)`;
-                db.run(insertSQL, [groupID, isBotEnabled], (err) => {
+                const insertGroupsSQL = `INSERT INTO groups (group_id, is_bot_enabled) VALUES (?, ?)`;
+                db.run(insertGroupsSQL, [groupID, isBotEnabled], (err) => {
                     if (err) {
                         console.error('插入群信息时出错：', err.message);
                         reject(err);
@@ -113,28 +145,63 @@ function isBotEnabledForGroup(groupID) {
     return new Promise((resolve, reject) => {
         const db = new sqlite3.Database(DB_FILE_PATH, (err) => {
             if (err) {
-                console.error('连接数据库时出错：', err.message);
+                console.error(`${getCurrentTime()} 连接数据库时出错：`, err.message);
                 reject(err);
             } else {
-                console.log('已连接到数据库。');
+                console.log(`${getCurrentTime()} 已连接到数据库。`);
 
-                const query = `SELECT is_bot_enabled FROM groups WHERE group_id = ?`;
-                db.get(query, [groupID], (err, row) => {
+                const queryGroups = `SELECT is_bot_enabled FROM groups WHERE group_id = ?`;
+                db.get(queryGroups, [groupID], (err, row) => {
                     if (err) {
-                        console.error('查询群信息时出错：', err.message);
+                        console.error(`${getCurrentTime()} 查询群信息时出错：`, err.message);
                         reject(err);
                     } else {
                         const isEnabled = row ? !!row.is_bot_enabled : false;
-                        console.log(`群 ${groupID} 是否启用机器人功能：${isEnabled}`);
+                        console.log(`${getCurrentTime()} 群 ${groupID} 是否启用机器人功能：${isEnabled}`);
                         resolve(isEnabled);
                     }
 
                     // 查询完成后关闭数据库连接
                     db.close((err) => {
                         if (err) {
-                            console.error('关闭数据库连接时出错：', err.message);
+                            console.error(`${getCurrentTime()} 关闭数据库连接时出错：`, err.message);
                         } else {
-                            console.log('数据库连接已关闭。');
+                            console.log(`${getCurrentTime()} 数据库连接已关闭。`);
+                        }
+                    });
+                });
+            }
+        });
+    });
+}
+
+// 函数用于获取中文翻译
+function getChineseTranslation(sourceText) {
+    return new Promise((resolve, reject) => {
+        const db = new sqlite3.Database(DB_FILE_PATH, (err) => {
+            if (err) {
+                console.error(`${getCurrentTime()} 连接数据库时出错：`, err.message);
+                reject(err);
+            } else {
+                console.log(`${getCurrentTime()} 已连接到数据库。`);
+
+                const queryTranslation = `SELECT target FROM translation WHERE source = ?`;
+                db.get(queryTranslation, [sourceText], (err, row) => {
+                    if (err) {
+                        console.error(`${getCurrentTime()} 查询翻译时出错：`, err.message);
+                        reject(err);
+                    } else {
+                        const targetText = row ? row.target : null;
+                        console.log(`${getCurrentTime()} 翻译结果：${targetText}`);
+                        resolve(targetText);
+                    }
+
+                    // 查询完成后关闭数据库连接
+                    db.close((err) => {
+                        if (err) {
+                            console.error(`${getCurrentTime()} 关闭数据库连接时出错：`, err.message);
+                        } else {
+                            console.log(`${getCurrentTime()} 数据库连接已关闭。`);
                         }
                     });
                 });
@@ -150,5 +217,6 @@ if (!isDatabaseExists(DB_FILE_PATH)) {
 
 module.exports = {
     insertGroupInfo,
-    isBotEnabledForGroup
+    isBotEnabledForGroup,
+    getChineseTranslation
 };

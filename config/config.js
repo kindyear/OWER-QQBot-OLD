@@ -1,6 +1,7 @@
 // config.js
 
 module.exports = {
+
     //  填写go-cqhttp的ws接口地址和http接口地址
     //  根据go-cqhttp配置文件中的内容修改
     WEBSOCKET_HOST: 'http://localhost:5701',
