@@ -15,6 +15,16 @@ OWER-QQBot是一个基于GO-CQHttp和OWER-API的守望先锋2国际服QQ群内�
 <img src="https://img.shields.io/github/release/kindyear/OWER-QQBot.svg?style=flat-square">
 </div>
 
+# 暂停维护说明
+
+由于QQ平台的第三方机器人框架屏蔽较为严重，无法进行有效的测试以及使用运行，故暂时停止维护本项目
+
+待未来官方的QQ群机器人框架上线后，会考虑进行重构
+
+目前正在运行的机器人为OWER-QQGuild-Bot项目（暂未开源）
+
+可前往QQ频道搜索“望望小友们”频道加入并尝试使用
+
 # 部署
 
 运行环境要求：
